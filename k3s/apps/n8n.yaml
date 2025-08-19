@@ -1,0 +1,132 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: apps
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: n8n-data
+  namespace: apps
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n8n
+  namespace: apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: n8n
+  template:
+    metadata:
+      labels:
+        app: n8n
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: n8n
+          image: n8nio/n8n:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            # Basic URL settings behind Traefik
+            - name: N8N_HOST
+              value: "n8n.local"
+            - name: N8N_PROTOCOL
+              value: "http"
+            - name: N8N_PORT
+              value: "5678"
+            - name: WEBHOOK_URL
+              value: "http://n8n.local/"
+            # Optional: reduce telemetry/noise
+            - name: N8N_DIAGNOSTICS_ENABLED
+              value: "false"
+            - name: N8N_TELEMETRY_ENABLED
+              value: "false"
+            # Basic Auth (handled by n8n itself)
+            - name: N8N_BASIC_AUTH_ACTIVE
+              value: "true"
+            - name: N8N_BASIC_AUTH_USER
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: N8N_BASIC_AUTH_USER
+            - name: N8N_BASIC_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: N8N_BASIC_AUTH_PASSWORD
+            # Encryption key for credentials
+            - name: N8N_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: n8n-secrets
+                  key: N8N_ENCRYPTION_KEY
+            # Timezone (optional)
+            - name: TZ
+              value: "Asia/Jakarta"
+          ports:
+            - containerPort: 5678
+          volumeMounts:
+            # Persist ~/.n8n (holds database.sqlite, credentials, etc.)
+            - name: data
+              mountPath: /home/node/.n8n
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5678
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5678
+            initialDelaySeconds: 30
+            periodSeconds: 20
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: n8n-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: n8n
+  namespace: apps
+spec:
+  selector:
+    app: n8n
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5678
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: n8n
+  namespace: apps
+  annotations:
+    # If you disabled Traefik, skip the ingress and use the NodePort option below
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+    - host: n8n.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: n8n
+                port:
+                  number: 80
