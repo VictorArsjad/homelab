@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evolution-api
+  namespace: apps
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evolution-api
+  template:
+    metadata:
+      labels:
+        app: evolution-api
+    spec:
+      containers:
+        - name: evolution-api
+          image: atendai/evolution-api:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: AUTHENTICATION_API_KEY
+              value: "mude-me"
