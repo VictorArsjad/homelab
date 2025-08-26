@@ -13,6 +13,7 @@ spec:
       labels:
         app: n8n
     spec:
+      automountServiceAccountToken: false
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
@@ -21,16 +22,23 @@ spec:
         - name: n8n
           image: n8nio/n8n:latest
           imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
           env:
             # Basic URL settings behind Traefik
             - name: N8N_HOST
-              value: "n8n.local"
+              value: "relevant-finch-dynamic.ngrok-free.app"
             - name: N8N_PROTOCOL
               value: "http"
             - name: N8N_PORT
               value: "5678"
             - name: WEBHOOK_URL
-              value: "http://n8n.local/"
+              value: "https://relevant-finch-dynamic.ngrok-free.app/"
             # Optional: reduce telemetry/noise
             - name: N8N_DIAGNOSTICS_ENABLED
               value: "false"
