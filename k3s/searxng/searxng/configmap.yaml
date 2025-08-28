@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: searxng-settings
+  namespace: searxng
+data:
+  settings.yml: |
+    use_default_settings: true
+
+    general:
+      instance_name: "Private SearXNG"
+
+    # IMPORTANT for n8n: allow JSON responses
+    search:
+      safe_search: 1
+      formats:
+        - html
+        - json  # enables /search?format=json
+    # base_url & secret supplied by env vars (see Deployment)
+    server:
+      method: "POST"
+
+    # Show these tabs in the UI (images tab is useful in browser)
+    categories_as_tabs:
+      general:
+      images:
