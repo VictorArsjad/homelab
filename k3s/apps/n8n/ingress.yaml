@@ -4,11 +4,12 @@ metadata:
   name: n8n
   namespace: apps
   annotations:
-    # If you disabled Traefik, skip the ingress and use the NodePort option below
     kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
+  ingressClassName: traefik
   rules:
-    - host: n8n.local
+    - host: n8n.home.lan
       http:
         paths:
           - path: /
@@ -17,4 +18,8 @@ spec:
               service:
                 name: n8n
                 port:
-                  number: 80
+                  name: http
+status:
+  loadBalancer:
+    ingress:
+      - ip: 192.168.1.194

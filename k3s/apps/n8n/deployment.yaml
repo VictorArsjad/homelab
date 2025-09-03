@@ -8,6 +8,11 @@ spec:
   selector:
     matchLabels:
       app: n8n
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+    type: RollingUpdate
   template:
     metadata:
       labels:
