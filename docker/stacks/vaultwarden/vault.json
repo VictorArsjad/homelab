@@ -1,0 +1,22 @@
+{
+    "TCP": {
+        "443": {
+            "HTTPS": true
+        }
+    },
+    "Web": {
+        "vault.taila60dd0.ts.net:443": {
+            "Handlers": {
+                "/": {
+                    "Proxy": "http://127.0.0.1:80"
+                },
+                "/notifications/hub": {
+                    "Proxy": "http://127.0.0.1:3012"
+                }
+            }
+        }
+    },
+    "AllowFunnel": {
+        "vault.taila60dd0.ts.net:443": false
+    }
+}

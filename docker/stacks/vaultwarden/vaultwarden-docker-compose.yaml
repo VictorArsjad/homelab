@@ -1,0 +1,76 @@
+version: "3.8"
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    volumes:
+      - ./data/bitwarden:/data
+      - ./tailscale-vault/state:/var/lib/tailscale:ro # mount TS state (where certs live)
+    restart: unless-stopped
+    depends_on:
+      - tailscale-vault
+    network_mode: service:tailscale-vault
+    environment:
+      WEBSOCKET_ENABLED: "true"
+      ADMIN_TOKEN: "${ADMIN_TOKEN}"
+      DOMAIN: "https://vault.taila60dd0.ts.net"
+      SIGNUPS_ALLOWED: "false" # turn on only if needed
+      # SMTP for invites/2FA emails:
+      SMTP_HOST: "smtp.gmail.com"
+      SMTP_PORT: "587"
+      SMTP_SECURITY: "starttls" # or "force_tls" / "off"
+      SMTP_USERNAME: "victorarsjad@gmail.com"
+      SMTP_PASSWORD: "${SMTP_PASSWORD}"
+      SMTP_FROM: "victorarsjad@gmail.com"
+      SMTP_TIMEOUT: "15"
+      # ROCKET_TLS: '{certs="/var/lib/tailscale/vault.taila60dd0.ts.net.crt", key="/var/lib/tailscale/vault.taila60dd0.ts.net.key"}'
+      ROCKET_ADDRESS: "0.0.0.0"
+      ROCKET_PORT: "80"
+
+  bw_backup:
+    image: bruceforce/vaultwarden-backup:latest
+    container_name: vaultwarden-backup
+    restart: unless-stopped
+    depends_on:
+      - vaultwarden
+    volumes:
+      - ./data/bitwarden:/data
+      - /opt/Bitwarden-Backup:/backup
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      DB_FILE: /data/db.sqlite3
+      BACKUP_FILE: /backup/backup.sqlite3
+      BACKUP_FILE_PERMISSIONS: "700"
+      CRON_TIME: "0 1 * * *" # 01:00 daily
+      TIMESTAMP: "false"
+      UID: "0"
+      GID: "0"
+
+  tailscale-vault:
+    image: tailscale/tailscale:latest
+    container_name: ts-vaultwarden
+    hostname: vault
+    restart: unless-stopped
+    ports:
+      - "8085:80" # vaultwarden app HTTP
+      - "3012:3012" # vaultwarden websocket notifications
+    cap_add:
+      - net_admin
+      - net_raw
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - ./tailscale-vault/config:/config
+      - ./tailscale-vault/state:/var/lib/tailscale
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      # - TS_EXTRA_ARGS=--advertise-tags=tag:container
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_SERVE_CONFIG=/config/vault.json
+      - TS_USERSPACE=false
+
+volumes:
+  tailscale-vault:
+    driver: local
