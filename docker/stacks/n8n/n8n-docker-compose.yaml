@@ -6,19 +6,21 @@ services:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      # public entrypoints (keep global HTTP->HTTPS redirect)
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.internal.address=:8081"
+      # public entrypoints (keep global HTTP->HTTPS redirect) NOTE: removed and redirected to NPM
+      # - "--entrypoints.web.address=:80"
+      # - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      # - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      # - "--entrypoints.websecure.address=:443"
       # NEW: a private HTTP-only entrypoint for ngrok (no redirect)
-      - "--entrypoints.ngrok.address=:8880"
-      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
-      - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
-      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+      # - "--entrypoints.ngrok.address=:8880"
+      # - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
+      # - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
+      # - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
     ports:
-      - "80:80"
-      - "443:443"
+      - 8081:8081
+    #   - "80:80"
+    #   - "443:443"
     volumes:
       - traefik_data:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -31,26 +33,27 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
-      - traefik.http.routers.n8n.tls=true
-      - traefik.http.routers.n8n.entrypoints=web,websecure
-      - traefik.http.routers.n8n.tls.certresolver=mytlschallenge
-      - traefik.http.middlewares.n8n.headers.SSLRedirect=true
-      - traefik.http.middlewares.n8n.headers.STSSeconds=315360000
-      - traefik.http.middlewares.n8n.headers.browserXSSFilter=true
-      - traefik.http.middlewares.n8n.headers.contentTypeNosniff=true
-      - traefik.http.middlewares.n8n.headers.forceSTSHeader=true
-      - traefik.http.middlewares.n8n.headers.SSLHost=${DOMAIN_NAME}
-      - traefik.http.middlewares.n8n.headers.STSIncludeSubdomains=true
-      - traefik.http.middlewares.n8n.headers.STSPreload=true
-      - traefik.http.routers.n8n.middlewares=n8n@docker
-      # NEW: a second router that serves the ngrok domain on the HTTP-only entrypoint
-      - traefik.http.routers.n8n-ngrok.rule=Host(`${NGROK_DOMAIN}`)
-      - traefik.http.routers.n8n-ngrok.entrypoints=ngrok
-      - traefik.http.routers.n8n-ngrok.tls=false
-      # Bind the service/port Traefik should send traffic to
-      - traefik.http.services.n8n-svc.loadbalancer.server.port=5678
-      - traefik.http.routers.n8n.service=n8n-svc
-      - traefik.http.routers.n8n-ngrok.service=n8n-svc
+      # - traefik.http.routers.n8n.tls=true
+      - traefik.http.routers.n8n.entrypoints=internal
+      - traefik.http.services.n8n.loadbalancer.server.port=5678
+      # - traefik.http.routers.n8n.tls.certresolver=mytlschallenge
+      # - traefik.http.middlewares.n8n.headers.SSLRedirect=true
+      # - traefik.http.middlewares.n8n.headers.STSSeconds=315360000
+      # - traefik.http.middlewares.n8n.headers.browserXSSFilter=true
+      # - traefik.http.middlewares.n8n.headers.contentTypeNosniff=true
+      # - traefik.http.middlewares.n8n.headers.forceSTSHeader=true
+      # - traefik.http.middlewares.n8n.headers.SSLHost=${DOMAIN_NAME}
+      # - traefik.http.middlewares.n8n.headers.STSIncludeSubdomains=true
+      # - traefik.http.middlewares.n8n.headers.STSPreload=true
+      # - traefik.http.routers.n8n.middlewares=n8n@docker
+      # # NEW: a second router that serves the ngrok domain on the HTTP-only entrypoint
+      # - traefik.http.routers.n8n-ngrok.rule=Host(`${NGROK_DOMAIN}`)
+      # - traefik.http.routers.n8n-ngrok.entrypoints=ngrok
+      # - traefik.http.routers.n8n-ngrok.tls=false
+      # # Bind the service/port Traefik should send traffic to
+      # - traefik.http.services.n8n-svc.loadbalancer.server.port=5678
+      # - traefik.http.routers.n8n.service=n8n-svc
+      # - traefik.http.routers.n8n-ngrok.service=n8n-svc
     environment:
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
@@ -70,11 +73,11 @@ services:
     image: "ngrok/ngrok:latest"
     restart: always
     command: ["http", "--domain=${NGROK_DOMAIN}", "traefik:8880"]
-    environment: 
+    environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
     depends_on:
       - traefik
-      
+
 volumes:
   n8n_data:
   traefik_data:
