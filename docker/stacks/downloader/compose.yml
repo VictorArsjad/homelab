@@ -1,0 +1,18 @@
+services:
+  jdownloader:
+    image: jaymoulin/jdownloader
+    container_name: jdownloader
+    environment:
+      - MYJD_EMAIL=victorarsjad@gmail.com
+      - MYJD_PASSWORD="5wRCcDHxK3wo0o"
+      - MYJD_DEVICE_NAME=homelab-jd
+      - TZ=Asia/Jakarta
+    volumes:
+      - /srv/docker/downloader/downloads:/opt/JDownloader/Downloads
+      - /srv/docker/downloader/config:/opt/JDownloader/cfg
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 512M

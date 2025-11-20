@@ -4,6 +4,9 @@ services:
   vaultwarden:
     image: vaultwarden/server:latest
     container_name: vaultwarden
+    # ports:
+    #   - "8085:80" # app HTTP
+    #   - "3012:3012" # websocket notifications
     volumes:
       - ./data/bitwarden:/data
       - ./tailscale-vault/state:/var/lib/tailscale:ro # mount TS state (where certs live)
@@ -58,12 +61,12 @@ services:
       - "3012:3012" # vaultwarden websocket notifications
     cap_add:
       - net_admin
-      - net_raw
     devices:
       - /dev/net/tun:/dev/net/tun
     volumes:
-      - ./tailscale-vault/config:/config
-      - ./tailscale-vault/state:/var/lib/tailscale
+      # - ts-vaultwarden:/var/lib/tailscale
+      - ${PWD}/tailscale-vault/config:/config
+      - ${PWD}/tailscale-vault/state:/var/lib/tailscale
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
       # - TS_EXTRA_ARGS=--advertise-tags=tag:container

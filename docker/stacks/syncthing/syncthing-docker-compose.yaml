@@ -6,14 +6,15 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Jakarta
-      # Keep GUI reachable only via the local loopback,
-      # so all access goes through Tailscale Serve (HTTPS).
       - SYNCTHING_GUI_ADDRESS=127.0.0.1:8384
-      # force IPv4 only to silence IPv6 fragment logs
-      - SYNCTHING_LISTEN_ADDRESSES=quic4://0.0.0.0:22000,tcp4://0.0.0.0:22000
     volumes:
       - syncthing_config:/config
       - /srv/docker/syncthing/obsidian:/obsidian
+    # ports:
+    #   - 8384:8384
+    #   - 22000:22000/tcp
+    #   - 22000:22000/udp
+    #   - 21027:21027/udp
     network_mode: service:tailscale-syncthing
     restart: unless-stopped
     depends_on:
@@ -24,6 +25,9 @@ services:
     container_name: ts-syncthing
     hostname: syncthing
     restart: unless-stopped
+    # ports: (remove ports? since access is via tailnet)
+    #   - "8085:80" # syncthing app HTTP
+    #   - "3012:3012" # syncthing websocket notifications
     cap_add:
       - net_admin
       - net_raw

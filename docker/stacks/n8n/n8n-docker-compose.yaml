@@ -29,46 +29,49 @@ services:
     image: docker.n8n.io/n8nio/n8n
     restart: always
     ports:
-      - "127.0.0.1:5678:5678"
+      - "5678:5678"
     labels:
       - traefik.enable=true
 
       # one service definition reused by both routers
-      - traefik.http.services.n8n-svc.loadbalancer.server.port=5678
+      # - traefik.http.services.n8n-svc.loadbalancer.server.port=5678
 
       # router for LAN/NPM host
-      - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
-      - traefik.http.routers.n8n.entrypoints=internal
-      - traefik.http.routers.n8n.service=n8n-svc
+      # - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
+      # - traefik.http.routers.n8n.entrypoints=internal
+      # - traefik.http.routers.n8n.service=n8n-svc
 
       # router for ngrok host
-      - traefik.http.routers.n8n-ngrok.rule=Host(`${NGROK_DOMAIN}`)
-      - traefik.http.routers.n8n-ngrok.entrypoints=internal
-      - traefik.http.routers.n8n-ngrok.tls=false
-      - traefik.http.routers.n8n-ngrok.service=n8n-svc
+      # - traefik.http.routers.n8n-ngrok.rule=Host(`${NGROK_DOMAIN}`)
+      # - traefik.http.routers.n8n-ngrok.entrypoints=internal
+      # - traefik.http.routers.n8n-ngrok.tls=false
+      # - traefik.http.routers.n8n-ngrok.service=n8n-svc
     environment:
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
       - N8N_PORT=5678
-      - N8N_PROTOCOL=https
+      - N8N_PROTOCOL=http
       - N8N_RUNNERS_ENABLED=true
       - NODE_ENV=production
-      - WEBHOOK_URL=https://${NGROK_DOMAIN}/
+      - N8N_COMMUNITY_PACKAGES_ALL=true
+      - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}
+      - N8N_EDITOR_BASE_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
       - TZ=${GENERIC_TIMEZONE}
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_SECURE_COOKIE=false
     volumes:
       - n8n_data:/home/node/.n8n
       - ./local-files:/files
 
-  ngrok:
-    image: "ngrok/ngrok:latest"
-    restart: always
-    command: ["http", "--domain=${NGROK_DOMAIN}", "traefik:8081"]
-    environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-    depends_on:
-      - traefik
+  # ngrok:
+  #   image: "ngrok/ngrok:latest"
+  #   restart: always
+  #   command: ["http", "--domain=${NGROK_DOMAIN}", "traefik:8081"]
+  #   environment:
+  #     - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+  #   depends_on:
+  #     - traefik
 
 volumes:
   n8n_data:
