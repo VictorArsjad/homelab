@@ -1,51 +1,10 @@
 services:
-  traefik:
-    image: "traefik"
-    restart: always
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.internal.address=:8081"
-      # public entrypoints (keep global HTTP->HTTPS redirect) NOTE: removed and redirected to NPM
-      # - "--entrypoints.web.address=:80"
-      # - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      # - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      # - "--entrypoints.websecure.address=:443"
-      # NEW: a private HTTP-only entrypoint for ngrok (no redirect)
-      # - "--entrypoints.ngrok.address=:8880"
-      # - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
-      # - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
-      # - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
-    ports:
-      - 8081:8081
-    #   - "80:80"
-    #   - "443:443"
-    volumes:
-      - traefik_data:/letsencrypt
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-
   n8n:
     image: docker.n8n.io/n8nio/n8n
     restart: always
     ports:
       - "5678:5678"
     labels:
-      - traefik.enable=true
-
-      # one service definition reused by both routers
-      # - traefik.http.services.n8n-svc.loadbalancer.server.port=5678
-
-      # router for LAN/NPM host
-      # - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
-      # - traefik.http.routers.n8n.entrypoints=internal
-      # - traefik.http.routers.n8n.service=n8n-svc
-
-      # router for ngrok host
-      # - traefik.http.routers.n8n-ngrok.rule=Host(`${NGROK_DOMAIN}`)
-      # - traefik.http.routers.n8n-ngrok.entrypoints=internal
-      # - traefik.http.routers.n8n-ngrok.tls=false
-      # - traefik.http.routers.n8n-ngrok.service=n8n-svc
     environment:
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
@@ -63,15 +22,6 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
       - ./local-files:/files
-
-  # ngrok:
-  #   image: "ngrok/ngrok:latest"
-  #   restart: always
-  #   command: ["http", "--domain=${NGROK_DOMAIN}", "traefik:8081"]
-  #   environment:
-  #     - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-  #   depends_on:
-  #     - traefik
 
 volumes:
   n8n_data:
