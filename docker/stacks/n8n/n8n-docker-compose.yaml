@@ -1,56 +1,14 @@
 services:
-  traefik:
-    image: "traefik"
-    restart: always
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.internal.address=:8081"
-      # public entrypoints (keep global HTTP->HTTPS redirect) NOTE: removed and redirected to NPM
-      # - "--entrypoints.web.address=:80"
-      # - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      # - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      # - "--entrypoints.websecure.address=:443"
-      # NEW: a private HTTP-only entrypoint for ngrok (no redirect)
-      # - "--entrypoints.ngrok.address=:8880"
-      # - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
-      # - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
-      # - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
-    ports:
-      - 8081:8081
-    #   - "80:80"
-    #   - "443:443"
-    volumes:
-      - traefik_data:/letsencrypt
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-
   n8n:
     image: docker.n8n.io/n8nio/n8n
     restart: always
     ports:
       - "5678:5678"
-    labels:
-      - traefik.enable=true
-
-      # one service definition reused by both routers
-      # - traefik.http.services.n8n-svc.loadbalancer.server.port=5678
-
-      # router for LAN/NPM host
-      # - traefik.http.routers.n8n.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
-      # - traefik.http.routers.n8n.entrypoints=internal
-      # - traefik.http.routers.n8n.service=n8n-svc
-
-      # router for ngrok host
-      # - traefik.http.routers.n8n-ngrok.rule=Host(`${NGROK_DOMAIN}`)
-      # - traefik.http.routers.n8n-ngrok.entrypoints=internal
-      # - traefik.http.routers.n8n-ngrok.tls=false
-      # - traefik.http.routers.n8n-ngrok.service=n8n-svc
     environment:
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
       - N8N_PORT=5678
-      - N8N_PROTOCOL=http
+      - N8N_PROTOCOL=https
       - N8N_RUNNERS_ENABLED=true
       - NODE_ENV=production
       - N8N_COMMUNITY_PACKAGES_ALL=true
@@ -59,20 +17,50 @@ services:
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
       - TZ=${GENERIC_TIMEZONE}
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
-      - N8N_SECURE_COOKIE=false
+      - N8N_SECURE_COOKIE=true
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=postgres
+      - DB_POSTGRESDB_HOST=db
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
+      - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
     volumes:
       - n8n_data:/home/node/.n8n
       - ./local-files:/files
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:5678/healthz"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
 
-  # ngrok:
-  #   image: "ngrok/ngrok:latest"
-  #   restart: always
-  #   command: ["http", "--domain=${NGROK_DOMAIN}", "traefik:8081"]
-  #   environment:
-  #     - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
-  #   depends_on:
-  #     - traefik
+  db:
+    image: postgres:16.0-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_POSTGRESDB_USER}
+      POSTGRES_PASSWORD: ${DB_POSTGRESDB_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - n8n_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
 
 volumes:
   n8n_data:
-  traefik_data:
+  n8n_pg_data:
