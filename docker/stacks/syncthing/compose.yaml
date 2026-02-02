@@ -43,20 +43,20 @@ services:
       - TS_USERSPACE=false
 
 # https://github.com/gitwatch/gitwatch
-gitwatch:
-  image: ghcr.io/gitwatch/gitwatch:latest
-  environment:
-    - GIT_WATCH_DIR=/repo
-    - GIT_DIR=/repo/.git
-    - GIT_REMOTE=origin
-    - GIT_BRANCH=master
-  volumes:
-    - /srv/docker/syncthing/obsidian:/repo
-    - /home/victor/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro # Read-only SSH key
-    - /home/victor/.gitconfig:/root/.gitconfig:ro
-  restart: unless-stopped
-  depends_on:
-    - syncthing
+  gitwatch:
+    image: ghcr.io/gitwatch/gitwatch:latest
+    environment:
+      - GIT_WATCH_DIR=/repo
+      - GIT_DIR=/repo/.git
+      - GIT_REMOTE=origin
+      - GIT_BRANCH=master
+    volumes:
+      - /srv/docker/syncthing/obsidian:/repo
+      - /home/victor/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro # Read-only SSH key
+      - /home/victor/.gitconfig:/root/.gitconfig:ro
+    restart: unless-stopped
+    depends_on:
+      - syncthing
 
 volumes:
   syncthing_config:
