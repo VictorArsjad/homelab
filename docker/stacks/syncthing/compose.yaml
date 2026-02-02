@@ -42,7 +42,7 @@ services:
       - TS_SERVE_CONFIG=/config/serve.json
       - TS_USERSPACE=false
 
-# https://github.com/gitwatch/gitwatch
+  # https://github.com/gitwatch/gitwatch
   gitwatch:
     image: ghcr.io/gitwatch/gitwatch:latest
     environment:
@@ -50,6 +50,7 @@ services:
       - GIT_DIR=/repo/.git
       - GIT_REMOTE=origin
       - GIT_BRANCH=master
+      - SLEEP_TIME=600 # seconds
     volumes:
       - /srv/docker/syncthing/obsidian:/repo
       - /home/victor/.ssh/id_ed25519:/root/.ssh/id_ed25519:ro # Read-only SSH key
