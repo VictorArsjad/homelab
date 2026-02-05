@@ -1,6 +1,6 @@
 services:
   n8n:
-    image: docker.n8n.io/n8nio/n8n
+    image: n8nio/n8n:1.123.5
     restart: always
     ports:
       - "5678:5678"
@@ -18,12 +18,15 @@ services:
       - TZ=${GENERIC_TIMEZONE}
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
       - N8N_SECURE_COOKIE=true
+      # db
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=postgres
       - DB_POSTGRESDB_HOST=db
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
       - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
+      # migration 2.0
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=false
     volumes:
       - n8n_data:/home/node/.n8n
       - ./local-files:/files
@@ -51,7 +54,7 @@ services:
     volumes:
       - n8n_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+      test: ["CMD-SHELL", 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"']
       interval: 20s
       timeout: 5s
       retries: 5
