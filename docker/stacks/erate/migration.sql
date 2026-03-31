@@ -1,0 +1,23 @@
+CREATE TABLE fx_rates (
+    id bigserial primary key,
+    ts_utc timestamptz not null,
+    aed numeric,
+    aud numeric,
+    cad numeric,
+    chf numeric,
+    cnh numeric,
+    dkk numeric,
+    eur numeric,
+    gbp numeric,
+    hkd numeric,
+    jpy numeric,
+    krw numeric,
+    myr numeric,
+    nzd numeric,
+    sar numeric,
+    sek numeric,
+    sgd numeric,
+    thb numeric,
+    usd numeric,
+    source text
+);

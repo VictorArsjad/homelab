@@ -1,0 +1,42 @@
+services:
+  erate_db:
+    image: postgres:16.0-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_POSTGRESDB_USER}
+      POSTGRES_PASSWORD: ${DB_POSTGRESDB_PASSWORD}
+      POSTGRES_DB: ${DB_POSTGRESDB_NAME}
+    volumes:
+      - erate_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"']
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    networks:
+      - n8n_net
+
+  pdc-agent:
+    container_name: pdc-agent
+    image: grafana/pdc-agent:latest
+    command: -token
+      ${GCLOUD_PDC_SIGNING_TOKEN}
+      -cluster prod-ap-southeast-2 -gcloud-hosted-grafana-id 1549186
+    depends_on:
+      erate_db:
+        condition: service_healthy
+    networks:
+      - n8n_net
+
+volumes:
+  erate_pg_data:
+
+networks:
+  n8n_net:
+    external: true
+    name: n8n_net
