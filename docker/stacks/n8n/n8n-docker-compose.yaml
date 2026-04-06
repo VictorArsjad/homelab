@@ -1,6 +1,6 @@
 services:
   n8n:
-    image: docker.n8n.io/n8nio/n8n
+    image: docker.n8n.io/n8nio/n8n:1.123.5
     restart: always
     ports:
       - "5678:5678"
@@ -24,6 +24,9 @@ services:
       - DB_POSTGRESDB_PORT=5432
       - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
       - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
+      # actual budget
+      # - NODE_FUNCTION_ALLOW_EXTERNAL=@actual-app/api
+      - ACTUAL_BUDGET_HTTP_API_KEY=${ACTUAL_BUDGET_HTTP_API_KEY}
     volumes:
       - n8n_data:/home/node/.n8n
       - ./local-files:/files
